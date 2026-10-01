@@ -1,7 +1,7 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
 #Entorno virtual
-ven
-.ven/
+venv
+.venv/
 
 #Archivos temporales
 __pycache__/
