@@ -18,4 +18,9 @@ th:first-child,td:first-child{text-align:left}
 tbody tr.drill{cursor:pointer}tbody tr.drill:hover{background:var(--row)}
 tfoot td,tr.tot td{font-weight:600}
 .grafico{width:28%}.b{height:10px;background:var(--acc);border-radius:3px;opacity:.75}
-@media(max-width:600px){.grafico{display:none}td:nth-child(n+4),th:nth-child(n+4){display:none}}
+@media(max-width:600px){.grafico{display:none}}
+.lbl{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+details{margin-top:16px}pre{white-space:pre-wrap;background:var(--row);padding:12px;border-radius:6px;font-size:13px}
+.crumbrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.dim{color:var(--mut);font-size:13px;margin-right:4px}
+td.drill{cursor:pointer;color:var(--acc)}td.drill:hover{text-decoration:underline}

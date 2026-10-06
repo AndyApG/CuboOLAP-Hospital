@@ -30,6 +30,12 @@ CREATE TABLE Hospital (          -- jerarquía: tipo > ciudad > hospital
     tipo_hospital      VARCHAR(50)
 );
 
+CREATE TABLE Medico (            -- jerarquía: especialidad > medico
+    id_medico        INT AUTO_INCREMENT PRIMARY KEY,
+    id_medico_fuente INT NOT NULL UNIQUE,
+    especialidad     VARCHAR(50)
+);
+
 CREATE TABLE Diagnostico (       -- jerarquía: categoria > diagnostico
     id_diagnostico        INT AUTO_INCREMENT PRIMARY KEY,
     id_diagnostico_fuente INT NOT NULL UNIQUE,
@@ -45,11 +51,13 @@ CREATE TABLE Hechos_Atencion (
     id_hospital        INT NOT NULL,
     id_tiempo          INT NOT NULL,
     id_diagnostico     INT NOT NULL,
+    id_medico          INT NOT NULL,
     num_consultas      INT,
     tiempo_espera_min  DECIMAL(6,1),          -- antes INT: se truncaban los decimales
     costo_atencion     DECIMAL(10,2),
     FOREIGN KEY (id_paciente)    REFERENCES Paciente(id_paciente),
     FOREIGN KEY (id_hospital)    REFERENCES Hospital(id_hospital),
     FOREIGN KEY (id_tiempo)      REFERENCES Tiempo(id_tiempo),
-    FOREIGN KEY (id_diagnostico) REFERENCES Diagnostico(id_diagnostico)
+    FOREIGN KEY (id_diagnostico) REFERENCES Diagnostico(id_diagnostico),
+    FOREIGN KEY (id_medico)      REFERENCES Medico(id_medico)
 );

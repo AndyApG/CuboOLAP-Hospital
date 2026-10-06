@@ -3,7 +3,7 @@ import pymysql
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")   # funciona desde cualquier carpeta
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")   
 
 def conexion():
     return pymysql.connect(host=os.getenv("DB_HOST", "localhost"), user=os.getenv("DB_USER"),

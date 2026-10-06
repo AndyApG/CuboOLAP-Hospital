@@ -2,17 +2,13 @@
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DSS Hospital · OLAP</title><link rel="stylesheet" href="style.css"></head>
 <body><main>
-  <h1>DSS Hospital <small>consultas OLAP</small></h1>
-  <div class="bar">
-    <div id="hiers"></div>
-    <label>Medida <select id="medida">
-      <option value="atenciones">Nº de atenciones</option>
-      <option value="costo_total">Costo total</option>
-      <option value="costo_prom">Costo promedio</option>
-      <option value="espera_prom">Espera promedio (min)</option></select></label>
-  </div>
+  <h1>DSS Hospital <small>cubo OLAP · drill down / roll up</small></h1>
+  <div class="lbl">Consulta</div><div id="consultas" class="chips"></div>
+  <div class="lbl">Dimensión</div><div id="hiers" class="chips"></div>
+  <div class="lbl">Cruzar con (opcional)</div><div id="cruce" class="chips"></div>
   <nav id="crumbs"></nav>
   <p class="hint" id="hint"></p>
-  <table><thead><tr><th id="th-nivel"></th><th>Atenciones</th><th>Costo total</th><th>Costo prom.</th><th>Espera prom.</th><th class="grafico"></th></tr></thead>
+  <table><thead><tr id="thead"></tr></thead>
     <tbody id="tbody"></tbody></table>
+  <details><summary>Ver consulta SQL</summary><pre id="sql"></pre></details>
 </main><script src="app.js"></script></body></html>

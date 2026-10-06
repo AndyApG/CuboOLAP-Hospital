@@ -13,6 +13,7 @@ def main():
     conn = conexion(); cur = conn.cursor()
 
     def uniq(cols):  # una fila por llave natural (las dimensiones son pequeñas)
+        
         return [tuple(r) for r in df[cols].drop_duplicates(cols[0]).itertuples(index=False)]
 
     upsert(cur, "Hospital", ["id_hospital_fuente","hospital","ciudad_hospital","tipo_hospital"],
@@ -24,6 +25,8 @@ def main():
     upsert(cur, "Diagnostico", ["id_diagnostico_fuente","diagnostico","categoria_diagnostico"],
            uniq(["id_diagnostico_fuente","diagnostico","categoria_diagnostico"]),
            ["diagnostico","categoria_diagnostico"])
+    upsert(cur, "Medico", ["id_medico_fuente","especialidad"],
+           uniq(["id_medico_fuente","especialidad"]), ["especialidad"])
     t = df.drop_duplicates("fecha")
     upsert(cur, "Tiempo", ["fecha","dia","mes","nombre_mes","trimestre","anio"],
            [(r.fecha.date(), r.dia, r.mes, r.nombre_mes, r.trimestre, r.anio) for r in t.itertuples()],
@@ -34,20 +37,21 @@ def main():
     m_h = mapa("SELECT id_hospital_fuente, id_hospital FROM Hospital")
     m_p = mapa("SELECT id_paciente_fuente, id_paciente FROM Paciente")
     m_d = mapa("SELECT id_diagnostico_fuente, id_diagnostico FROM Diagnostico")
+    m_m = mapa("SELECT id_medico_fuente, id_medico FROM Medico")
     m_t = mapa("SELECT fecha, id_tiempo FROM Tiempo")
 
     hechos = [(r.id_atencion_fuente, m_p[r.id_paciente_fuente], m_h[r.id_hospital_fuente],
-               m_t[r.fecha.date()], m_d[r.id_diagnostico_fuente],
+               m_t[r.fecha.date()], m_d[r.id_diagnostico_fuente], m_m[r.id_medico_fuente],
                r.num_consultas, r.tiempo_espera_min, r.costo_atencion)
               for r in df.itertuples()]
     upsert(cur, "Hechos_Atencion",
-           ["id_atencion_fuente","id_paciente","id_hospital","id_tiempo","id_diagnostico",
+           ["id_atencion_fuente","id_paciente","id_hospital","id_tiempo","id_diagnostico","id_medico",
             "num_consultas","tiempo_espera_min","costo_atencion"], hechos,
-           ["id_paciente","id_hospital","id_tiempo","id_diagnostico",
+           ["id_paciente","id_hospital","id_tiempo","id_diagnostico","id_medico",
             "num_consultas","tiempo_espera_min","costo_atencion"])
     conn.commit()
 
-    for tb in ["Tiempo","Paciente","Hospital","Diagnostico","Hechos_Atencion"]:
+    for tb in ["Tiempo","Paciente","Hospital","Diagnostico","Medico","Hechos_Atencion"]:
         cur.execute(f"SELECT COUNT(*) FROM {tb}"); print(f"{tb:16} {cur.fetchone()[0]:>4} filas")
     conn.close()
 

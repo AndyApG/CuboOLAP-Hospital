@@ -1,27 +1,38 @@
 # CuboOLAP-Hospital
-Proyecto que implementa las funciones OLAP en un DW implementado en MySQL Workbench.
+Data Warehouse hospitalario (modelo estrella de **5 dimensiones**) en MySQL, con ETL en Python y una app web que ejecuta
+**5 consultas** con operadores **drill down** y **roll up**.
 
-## Instalación
-Para poder reproducir el proyecto es necesario tener instalado **Python 3.10 o superior**.
+## Estructura
+| Carpeta | Contenido |
+|---|---|
+| `sql/schema_dss_hospital.sql` | Solo estructura (dimensiones + hechos) |
+| `sql/dw_hospital_poblado.sql` | Estructura **y datos** (se carga solo, sin Python) |
+| `sql/consultas.sql` | Las 5 consultas SQL de análisis |
+| `etl/` | Lee el CSV y puebla dimensiones y hechos |
+| `api/app.py` | API Flask (drill down / roll up) + sirve la interfaz |
+| `ui/` | Interfaz web |
+| `img/modelo_estrella_5dim.png` | Modelo del cubo |
 
-Primero crea un entorno virtual en tu computadora para instalar las dependencias necesarias del proyecto:
+## Instalación (Python 3.10+)
 ```bash
 python -m venv venv
+./venv/scripts/activate          # Windows  (Linux/Mac: source venv/bin/activate)
+pip install -r requirements.txt
 ```
-Después, activa el entorno en Windows
+Crea un archivo `.env` en la raíz con `DB_HOST`, `DB_USER`, `DB_PASSWORD` y `DB_NAME=Hospital_DSS`.
 
+## Base de datos (elige una opción)
 ```bash
-./venv/scripts/activate
+mysql -u root -p < sql/dw_hospital_poblado.sql      # A) esquema + datos ya cargados
+# B) esquema vacío y poblarlo con Python:
+mysql -u root -p < sql/schema_dss_hospital.sql
+cd etl && python cargar_datos.py                    # es re-ejecutable: no duplica datos
 ```
 
-Instala los requerimientos necesarios
-
-``` bash
- pip install -r requirements.txt
-```
-
-Ejecuta el proyecto 
+## Ejecutar la app
 ```bash
 python api/app.py
 ```
-Al ejecutarse, aparecerá una URL (por ejemplo http://127.0.0.1:5000) que puedes abrir en tu navegador para visualizar el dashboard.
+Abre http://127.0.0.1:5000 . Elige una de las 5 consultas y una dimensión; haz clic en una fila para **drill down**
+y usa las migas de pan o **⬆ Roll up** para subir.
+Con **Cruzar con** combinas dos dimensiones (p. ej. Hospital × Tiempo) y haces drill down / roll up en cada una por separado. El panel «Ver consulta SQL» muestra el SQL del nivel actual.

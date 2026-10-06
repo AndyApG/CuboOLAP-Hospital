@@ -1,53 +1,57 @@
 const $ = id => document.getElementById(id);
-const HIERS = {tiempo: "Tiempo", hospital: "Hospital", diagnostico: "Diagnóstico"};
-const state = {h: "tiempo", path: []};            // path = [{k, etiqueta}, ...]  (los padres ya fijados)
-const fmt = {atenciones: v => v, costo_total: v => "$" + v.toLocaleString("es-MX", {minimumFractionDigits: 2}),
-  costo_prom: v => "$" + v.toLocaleString("es-MX", {minimumFractionDigits: 2}), espera_prom: v => v.toFixed(1)};
+const el = (tag, props, parent) => { const e = Object.assign(document.createElement(tag), props); parent && parent.append(e); return e; };
+// path / path2 = padres ya fijados en cada eje: [{k, etiqueta}]. h2 = dimensión con la que se cruza ("" = ninguna)
+const state = {q: 1, h: "hospital", path: [], h2: "", path2: []};
+let META;
+const num = (v, u) => u === "$" ? "$" + v.toLocaleString("es-MX", {minimumFractionDigits: 2}) : u ? `${v} ${u}` : v;
 
 async function cargar() {
-  const q = new URLSearchParams({h: state.h, path: state.path.map(p => p.k).join("|")});
-  const r = await (await fetch("/api/olap?" + q)).json();
-  render(r);
+  const p = {q: state.q, h: state.h, path: state.path.map(x => x.k).join("|")};
+  if (state.h2) { p.h2 = state.h2; p.path2 = state.path2.map(x => x.k).join("|"); }
+  const r = await (await fetch("/api/olap?" + new URLSearchParams(p))).json();
+  r.error ? ($("hint").textContent = r.error) : render(r);
+}
+
+function chips(cont, items, activo, alClic) {
+  cont.innerHTML = "";
+  for (const [id, txt] of items) { const b = el("button", {textContent: txt, className: id == activo ? "on" : ""}, cont); b.onclick = () => alClic(id); }
 }
 
 function render(r) {
-  $("hiers").innerHTML = "";
-  for (const [k, nombre] of Object.entries(HIERS)) {
-    const b = Object.assign(document.createElement("button"), {textContent: nombre, className: k === state.h ? "on" : ""});
-    b.onclick = () => { state.h = k; state.path = []; cargar(); };
-    $("hiers").append(b);
-  }
-  // Migas de pan: cada una es un ROLL UP hasta ese nivel
-  $("crumbs").innerHTML = "";
-  const crumb = (txt, nivel, act) => {
-    const b = Object.assign(document.createElement("button"), {textContent: txt, className: act ? "act" : ""});
-    b.onclick = () => { state.path = state.path.slice(0, nivel); cargar(); };
-    $("crumbs").append(b);
-  };
-  crumb("Total", 0, r.n === 0);
-  state.path.forEach((p, i) => { $("crumbs").append(Object.assign(document.createElement("span"), {className: "sep", textContent: "›"}));
-    crumb(`${r.niveles[i]}: ${p.etiqueta}`, i + 1, false); });
-  if (r.n > 0) { const up = Object.assign(document.createElement("button"), {textContent: "⬆ Roll up"});
-    up.onclick = () => { state.path.pop(); cargar(); }; $("crumbs").append(up); }
-  $("hint").textContent = r.puede_drill ? `Nivel: ${r.nivel}. Haz clic en una fila para hacer Drill down a ${r.niveles[r.n + 1]}.`
-                                        : `Nivel: ${r.nivel} (máximo detalle). Usa Roll up o las migas para subir.`;
-  $("th-nivel").textContent = r.nivel;
+  const dims = Object.entries(META.jerarquias);
+  chips($("consultas"), META.consultas.map(c => [c.id, `${c.id}. ${c.titulo}`]), state.q, id => {
+    Object.assign(state, {q: +id, h: META.consultas.find(c => c.id == id).hier, path: [], h2: "", path2: []}); cargar(); });
+  chips($("hiers"), dims, state.h, k => { Object.assign(state, {h: k, path: []}); if (state.h2 === k) Object.assign(state, {h2: "", path2: []}); cargar(); });
+  chips($("cruce"), [["", "(ninguna)"], ...dims.filter(([k]) => k !== state.h)], state.h2, k => { Object.assign(state, {h2: k, path2: []}); cargar(); });
 
-  const m = $("medida").value, max = Math.max(...r.rows.map(x => x[m]), 1);
-  const tot = r.rows.reduce((a, x) => ({n: a.n + x.atenciones, c: a.c + x.costo_total}), {n: 0, c: 0});
+  // Migas de pan por eje: cada miga y el botón son ROLL UP
+  $("crumbs").innerHTML = "";
+  r.ejes.forEach((e, i) => {
+    const key = i ? "path2" : "path", row = el("div", {className: "crumbrow"}, $("crumbs"));
+    el("span", {className: "dim", textContent: META.jerarquias[e.hier] + ":"}, row);
+    const crumb = (txt, nivel, act) => { const b = el("button", {textContent: txt, className: act ? "act" : ""}, row);
+      b.onclick = () => { state[key] = state[key].slice(0, nivel); cargar(); }; };
+    crumb("Total", 0, e.n === 0);
+    state[key].forEach((p, j) => { el("span", {className: "sep", textContent: "›"}, row); crumb(`${e.niveles[j]}: ${p.etiqueta}`, j + 1, false); });
+    if (e.n > 0) el("button", {textContent: "⬆ Roll up", onclick: () => { state[key].pop(); cargar(); }}, row);
+  });
+  $("hint").textContent = r.ejes.some(e => e.puede_drill) ? "Clic en una etiqueta azul = Drill down en esa dimensión. Migas o ⬆ Roll up = subir de nivel."
+                                                        : "Máximo detalle en todas las dimensiones. Usa Roll up o las migas para subir.";
+  $("thead").innerHTML = r.ejes.map(e => `<th>${e.nivel}</th>`).join("") + `<th>Atenciones</th><th>${r.titulo}</th><th class="grafico"></th>`;
+
+  const max = Math.max(...r.rows.map(x => x.valor), 1);
   $("tbody").innerHTML = "";
   for (const x of r.rows) {
-    const tr = document.createElement("tr");
-    if (r.puede_drill) { tr.className = "drill"; tr.onclick = () => { state.path.push({k: x.k, etiqueta: x.etiqueta}); cargar(); }; }
-    tr.innerHTML = `<td>${x.etiqueta}</td><td>${x.atenciones}</td><td>${fmt.costo_total(x.costo_total)}</td>
-      <td>${fmt.costo_prom(x.costo_prom)}</td><td>${x.espera_prom.toFixed(1)} min</td>
-      <td class="grafico"><div class="b" style="width:${100 * x[m] / max}%"></div></td>`;
-    $("tbody").append(tr);
+    const tr = el("tr", {}, $("tbody"));
+    r.ejes.forEach((e, i) => {
+      const k = "k" + (i + 1), et = "etiqueta" + (i + 1), td = el("td", {textContent: x[et]}, tr);
+      if (e.puede_drill) { td.className = "drill"; td.onclick = () => { state[i ? "path2" : "path"].push({k: x[k], etiqueta: x[et]}); cargar(); }; }
+    });
+    el("td", {textContent: x.atenciones}, tr); el("td", {textContent: num(x.valor, r.unidad)}, tr);
+    el("td", {className: "grafico", innerHTML: `<div class="b" style="width:${100 * x.valor / max}%"></div>`}, tr);
   }
-  const t = document.createElement("tr"); t.className = "tot";
-  t.innerHTML = `<td>Subtotal</td><td>${tot.n}</td><td>${fmt.costo_total(tot.c)}</td><td>${fmt.costo_prom(tot.c / tot.n)}</td><td></td><td class="grafico"></td>`;
-  $("tbody").append(t);
+  el("tr", {className: "tot", innerHTML: `<td colspan="${r.ejes.length}">Total (niveles superiores)</td><td>${r.total.atenciones}</td><td>${num(r.total.valor, r.unidad)}</td><td class="grafico"></td>`}, $("tbody"));
+  $("sql").textContent = r.sql;
 }
 
-$("medida").onchange = cargar;
-cargar();
+fetch("/api/meta").then(r => r.json()).then(m => { META = m; cargar(); });
