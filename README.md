@@ -6,12 +6,12 @@ Data Warehouse hospitalario (modelo estrella de **5 dimensiones**) en MySQL, con
 | Carpeta | Contenido |
 |---|---|
 | `sql/schema_dss_hospital.sql` | Solo estructura (dimensiones + hechos) |
-| `sql/dw_hospital_poblado.sql` | Estructura **y datos** (se carga solo, sin Python) |
 | `sql/consultas.sql` | Las 5 consultas SQL de análisis |
-| `etl/` | Lee el CSV y puebla dimensiones y hechos |
+| `etl/read_csv.py` | Lee el CSV y genera las columnas mes dia y año a partir de la fecha |
+|`etl/cargar_datos.py`| Carga la informacion del archivo csv a la bd creada en mysql|
 | `api/app.py` | API Flask (drill down / roll up) + sirve la interfaz |
 | `ui/` | Interfaz web |
-| `img/modelo_estrella_5dim.png` | Modelo del cubo |
+| `img/modelo_estrella.png` | Modelo del cubo |
 
 ## Instalación (Python 3.10+)
 ```bash
